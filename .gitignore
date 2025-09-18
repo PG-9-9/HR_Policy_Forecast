@@ -1,2 +1,7 @@
 .env.example
 *.txt
+*.pdf
+*.csv
+*.env
+*.log
+__pycache__/

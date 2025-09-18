@@ -1,6 +1,6 @@
 # app/main.py
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -47,7 +47,7 @@ async def get_bot_response(msg: str = Form(...)):
     """Handle chat messages from the web interface"""
     session_id = "web_session"  # Use a default session for web interface
     
-    # Check if query is relevant to UK immigration/workforce topics
+    # Check if query is relevant to UK immigration/workforce topics OR is a greeting
     relevant_keywords = [
         'visa', 'immigration', 'sponsor', 'licence', 'skilled worker', 'work permit',
         'job', 'vacancy', 'workforce', 'employment', 'recruitment', 'hr', 'policy',
@@ -55,18 +55,53 @@ async def get_bot_response(msg: str = Form(...)):
         'ons', 'salary', 'threshold', 'points', 'compliance', 'employer'
     ]
     
+    greeting_keywords = ['hi', 'hello', 'hey', 'help', 'what', 'how', 'who', 'assistant', 'can you']
+    
     msg_lower = msg.lower()
     is_relevant = any(keyword in msg_lower for keyword in relevant_keywords)
+    is_greeting = any(keyword in msg_lower for keyword in greeting_keywords)
     
-    if not is_relevant:
-        return "I specialize in UK immigration policy and workforce planning. Please ask questions about UK visa requirements, immigration rules, sponsor licences, job market trends, or workforce forecasting."
+    # If it's not relevant and not a greeting, give fallback response
+    if not is_relevant and not is_greeting:
+        fallback = "Hello! I'm your HR Assistant, specialized in UK immigration policy and workforce planning. I help HR professionals, hiring managers, and employers navigate UK immigration requirements and make data-driven recruitment decisions. I can provide immigration guidance, workforce forecasting, and policy impact analysis. How can I assist you today?"
+        return PlainTextResponse(content=fallback, media_type="text/plain")
     
-    # RAG context for this turn
+    # For greetings, use a clear structured response
+    if is_greeting and not is_relevant:
+        greeting_lines = [
+            "Hello! I'm your HR Assistant. How can I assist you today?",
+            "",
+            "**Core Services:**",
+            "",
+            "1. **Workforce Forecasting:** UK job vacancy predictions, labour market trends",
+            "",
+            "2. **Policy Impact Analysis:** How immigration rule changes affect recruitment strategies",
+            "",
+            "3. **Immigration Guidance:** UK visa requirements, Skilled Worker visas, sponsor licence obligations",
+            "",
+            "**What you can forecast with me:**",
+            "",
+            "• UK Job Vacancy Ratio Forecasting (up to 6 months ahead)",
+            "• Immigration Policy Impact Predictions on job markets",
+            "• Workforce demand trends based on ONS employment data",
+            "• Event-driven forecasting incorporating policy changes and immigration rule updates",
+            "",
+            "What specific topic would you like to explore?"
+        ]
+        greeting_response = "\n".join(greeting_lines)
+        
+        append(session_id, "user", msg)
+        append(session_id, "assistant", greeting_response)
+        
+        return PlainTextResponse(content=greeting_response, media_type="text/plain")
+    
+    # RAG context for this turn (for immigration/workforce topics)
     ctx = stitched_context(msg, k=6)
     
     # Check if RAG found relevant context
     if not ctx.strip():
-        return "I don't have current information about that specific topic. Please refer to the latest guidance on gov.uk or consult with an immigration specialist."
+        no_context = "I don't have current information about that specific topic. Please refer to the latest guidance on gov.uk or consult with an immigration specialist."
+        return PlainTextResponse(content=no_context, media_type="text/plain")
     
     # Build messages
     msgs = [{"role":"system","content": SYSTEM},
@@ -81,7 +116,7 @@ async def get_bot_response(msg: str = Form(...)):
     append(session_id, "user", msg)
     append(session_id, "assistant", reply)
     
-    return reply
+    return PlainTextResponse(content=reply, media_type="text/plain")
 
 @app.post("/chat", response_model=ChatResponse)
 def chat_api(req: ChatRequest):

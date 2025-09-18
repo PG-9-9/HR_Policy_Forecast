@@ -326,10 +326,10 @@
         <v-app>
             <v-container v-show="messageStore.conversation.length === 0">
                 <div id="lottie" class="text-center text-h5">
-                    <a href="https://github.com/AI-QL/chat-ui" style="color: #1867C0"
-                        class="font-weight-bold text-decoration-none" target="_blank">
-                        <v-icon class="mb-2">mdi-github</v-icon>
-                        {{$t('$vuetify.dataIterator.title')}}</a>
+                    <div style="color: #1867C0" class="font-weight-bold">
+                        <v-icon class="mb-2">mdi-briefcase</v-icon>
+                        HR Assistant
+                    </div>
                 </div>
             </v-container>
             <v-container v-show="messageStore.conversation.length > 0" class="chat-bot">
@@ -2196,7 +2196,7 @@
                 $vuetify: {
                     ...en,
                     dataIterator: {
-                        title: 'AI Query Layout',
+                        title: 'HR Assistant',
                         q: { title: 'Query History' },
                         p: {
                             title: 'Prompts Template',

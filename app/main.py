@@ -1,5 +1,8 @@
 # app/main.py
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Form
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from rag.retrieve import stitched_context
@@ -8,6 +11,10 @@ from app.db import init, append, history, clear
 from app.llm import chat, SYSTEM
 
 app = FastAPI(title="UK HR Policy Copilot + Forecast")
+
+# Mount static files and templates
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
 class ChatRequest(BaseModel):
     session_id: str
@@ -27,6 +34,33 @@ class ForecastResponse(BaseModel):
 @app.on_event("startup")
 def _init():
     init()
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("chat.html", {"request": request})
+
+@app.post("/get")
+async def get_bot_response(msg: str = Form(...)):
+    """Handle chat messages from the web interface"""
+    session_id = "web_session"  # Use a default session for web interface
+    
+    # RAG context for this turn
+    ctx = stitched_context(msg, k=6)
+    
+    # Build messages
+    msgs = [{"role":"system","content": SYSTEM},
+            {"role":"system","content": f"Context:\n{ctx}"}]
+    
+    # Add history (persisted)
+    for r, c in history(session_id):
+        msgs.append({"role":r, "content":c})
+    msgs.append({"role":"user","content": msg})
+    
+    reply = chat(msgs)
+    append(session_id, "user", msg)
+    append(session_id, "assistant", reply)
+    
+    return reply
 
 @app.post("/chat", response_model=ChatResponse)
 def chat_api(req: ChatRequest):

@@ -1,35 +1,45 @@
-# app/db.py
-from pathlib import Path
-import sqlite3
-from typing import List, Tuple
+# app/llm.py
+import os
+from openai import OpenAI
+from typing import List, Dict
+from dotenv import load_dotenv
 
-DB = Path("data/app.sqlite")
-DB.parent.mkdir(parents=True, exist_ok=True)
+# Load environment variables
+load_dotenv()
 
-def init():
-    con = sqlite3.connect(DB)
-    cur = con.cursor()
-    cur.execute("""CREATE TABLE IF NOT EXISTS memory(
-        session_id TEXT, role TEXT, content TEXT, ts DATETIME DEFAULT CURRENT_TIMESTAMP
-    )""")
-    con.commit(); con.close()
+# Initialize OpenAI client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def append(session_id: str, role: str, content: str):
-    con = sqlite3.connect(DB); cur = con.cursor()
-    cur.execute("INSERT INTO memory(session_id, role, content) VALUES (?,?,?)",
-                (session_id, role, content))
-    con.commit(); con.close()
+SYSTEM = """You are a UK HR Policy & Immigration Expert and Forecasting Assistant. 
 
-def history(session_id: str, limit_pairs: int = 12) -> List[Tuple[str,str]]:
-    con = sqlite3.connect(DB); cur = con.cursor()
-    cur.execute("""SELECT role, content FROM memory
-                   WHERE session_id=? ORDER BY ts DESC LIMIT ?""",
-                (session_id, limit_pairs*2))
-    rows = cur.fetchall()[::-1]  # chronological
-    con.close()
-    return rows
+You help HR professionals, immigration lawyers, and policy analysts understand:
+- UK immigration rule changes and their impact on workforce planning
+- Skilled Worker visa requirements and sponsor licence obligations  
+- Job vacancy trends and labor market forecasts
+- Policy event impacts on recruitment and retention
 
-def clear(session_id: str):
-    con = sqlite3.connect(DB); cur = con.cursor()
-    cur.execute("DELETE FROM memory WHERE session_id=?", (session_id,))
-    con.commit(); con.close()
+Provide accurate, actionable insights based on official UK government sources.
+Always cite specific policies, dates, and sources when available.
+Be concise but comprehensive in your explanations."""
+
+def chat(messages: List[Dict[str, str]], model: str = "gpt-3.5-turbo") -> str:
+    """
+    Send messages to OpenAI and return the response.
+    
+    Args:
+        messages: List of message dicts with 'role' and 'content' keys
+        model: OpenAI model to use
+        
+    Returns:
+        The assistant's response as a string
+    """
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            max_tokens=500,
+            temperature=0.7
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Error: {str(e)}. Please check your OpenAI API key."

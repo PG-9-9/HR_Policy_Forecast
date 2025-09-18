@@ -15,6 +15,9 @@ app = FastAPI(title="UK HR Policy Copilot + Forecast")
 # Mount static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+# Change Jinja2 template syntax to avoid conflicts with Vue.js
+templates.env.variable_start_string = '{['
+templates.env.variable_end_string = ']}'
 
 class ChatRequest(BaseModel):
     session_id: str
@@ -37,15 +40,33 @@ def _init():
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    return templates.TemplateResponse("chat.html", {"request": request})
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/get")
 async def get_bot_response(msg: str = Form(...)):
     """Handle chat messages from the web interface"""
     session_id = "web_session"  # Use a default session for web interface
     
+    # Check if query is relevant to UK immigration/workforce topics
+    relevant_keywords = [
+        'visa', 'immigration', 'sponsor', 'licence', 'skilled worker', 'work permit',
+        'job', 'vacancy', 'workforce', 'employment', 'recruitment', 'hr', 'policy',
+        'forecast', 'trend', 'market', 'uk', 'britain', 'british', 'government',
+        'ons', 'salary', 'threshold', 'points', 'compliance', 'employer'
+    ]
+    
+    msg_lower = msg.lower()
+    is_relevant = any(keyword in msg_lower for keyword in relevant_keywords)
+    
+    if not is_relevant:
+        return "I specialize in UK immigration policy and workforce planning. Please ask questions about UK visa requirements, immigration rules, sponsor licences, job market trends, or workforce forecasting."
+    
     # RAG context for this turn
     ctx = stitched_context(msg, k=6)
+    
+    # Check if RAG found relevant context
+    if not ctx.strip():
+        return "I don't have current information about that specific topic. Please refer to the latest guidance on gov.uk or consult with an immigration specialist."
     
     # Build messages
     msgs = [{"role":"system","content": SYSTEM},
@@ -84,7 +105,3 @@ def chat_api(req: ChatRequest):
 def forecast_api(h: int = 6):
     out, events = forecast_months(h)
     return {"horizon": h, "forecast": out.to_dict(orient="records"), "events": events}
-
-@app.get("/")
-def root():
-    return {"ok": True, "endpoints": ["POST /chat", "GET /forecast?h=6"]}

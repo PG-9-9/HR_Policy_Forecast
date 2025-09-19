@@ -38,6 +38,11 @@ class ForecastResponse(BaseModel):
 def _init():
     init()
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for load balancers and monitoring"""
+    return {"status": "healthy", "service": "HR Policy Forecast API"}
+
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})

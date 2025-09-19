@@ -1,0 +1,57 @@
+# Version control
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Documentation
+README.md
+docs/
+
+# Development files
+.env.example
+docker-compose.yml
+docker-compose.*.yml
+
+# Large model files (download at runtime)
+data/processed/models/
+*.pt
+*.pkl
+
+# Test files
+test_*
+*_test.py
+tests/

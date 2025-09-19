@@ -1,5 +1,5 @@
 .env.example
-*.txt
+shortcuts.txt
 *.pdf
 *.csv
 *.env

@@ -1,0 +1,44 @@
+ETS FORECASTING REPORT
+==================================================
+
+Report Date: 2025-09-18 17:18:17
+Data Source: data\processed\models\training_frame.csv
+Training Period: 285 observations
+Test Period: 6 observations
+
+ETS MODEL CONFIGURATION
+-------------------------
+error: None
+trend: None
+seasonal: None
+auto_config: True
+seasonal_periods: 12
+selected_config: ('add', 'mul', None)
+aic: -650.9933426426866
+bic: -632.7308967413433
+smoothing_params: {}
+
+FORECAST RESULTS
+----------------
+ETS Forecasts:
+  Period +1: 2.4953
+  Period +2: 2.4906
+  Period +3: 2.4859
+  Period +4: 2.4812
+  Period +5: 2.4765
+  Period +6: 2.4718
+
+NAIVE Forecasts:
+  Period +1: 2.5000
+  Period +2: 2.5000
+  Period +3: 2.5000
+  Period +4: 2.5000
+  Period +5: 2.5000
+  Period +6: 2.5000
+
+RECOMMENDATIONS
+---------------
+- Use ETS model for production forecasting
+- Monitor forecast accuracy over time
+- Retrain model monthly with new data
+- Consider seasonal adjustments if patterns change

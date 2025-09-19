@@ -1,0 +1,28 @@
+FORECASTING MODEL EVALUATION REPORT
+==================================================
+
+Evaluation Date: 2025-09-18 17:28:55
+Data Source: data\processed\models\training_frame.csv
+Test Period: 6 periods
+Models Evaluated: 3
+Evaluation Time: 7.57 seconds
+
+RESULTS SUMMARY
+--------------------
+ rank model_name    mae   rmse  smape   mase   mape coverage  forecast_bias  directional_accuracy
+    1        ets 0.1669 0.1782 0.0699 4.1208 0.0729     None         0.1669                0.8000
+    2      naive 0.1833 0.1958 0.0765 4.5275 0.0801     None         0.1833                0.8000
+    3        tft 0.2671 0.2759 0.1094 6.5957 0.1163     None         0.2671                0.2000
+
+BEST MODEL DETAILS
+--------------------
+Model: ets
+sMAPE: 0.0699
+RMSE:  0.1782
+MAE:   0.1669
+MASE:  4.1208
+
+RECOMMENDATIONS
+---------------
+Use ets for production forecasting.
+Consider model improvement or additional features (MASE > 1).

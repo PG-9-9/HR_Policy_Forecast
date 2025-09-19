@@ -6,3 +6,4 @@ shortcuts.txt
 *.log
 __pycache__/
 NEW_UI/
+MD_Files/

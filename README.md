@@ -5,10 +5,11 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-009688.svg)](https://fastapi.tiangolo.com)
 [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?&logo=docker&logoColor=white)](https://www.docker.com/)
 
-> **Production-ready UK immigration policy assistant for HR professionals, hiring managers, and employers.**
+> **(Almost) Production-style UK immigration policy assistant for HR professionals, hiring managers, and employers.**
 
+**Sweet Note2:** Almost Production Ready, Well lot more to test, and debug, haven't worked on adding runner(yet!)
+**Sweet Note1:** Start chat by saying Hi
 
-**Sweet Note:** Start chat by saying Hi
 **Live Demo:** [http://project-demo.live](http://project-demo.live)
 
 ## Overview

@@ -46,12 +46,25 @@ docs/
 docker-compose.yml
 docker-compose.*.yml
 
-# Large model files (download at runtime)
+# Forecasting modules (excluded for minimal build)
+forecasting/
 data/processed/models/
 *.pt
 *.pkl
+train_tft.py
+infer.py
+
+# Large model files (download at runtime)
+data/processed/models/
 
 # Test files
 test_*
 *_test.py
 tests/
+
+# Full requirements (use minimal Linux version instead)
+requirements.txt
+requirements-minimal.txt
+environment.yml
+environment_current.yml
+test_minimal_requirements.py

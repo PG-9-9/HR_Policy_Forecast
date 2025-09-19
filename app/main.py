@@ -6,7 +6,8 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from rag.retrieve import stitched_context
-from forecasting.infer import forecast_months
+# Remove forecasting import for minimal build
+# from forecasting.infer import forecast_months
 from app.db import init, append, history, clear
 from app.llm import chat, SYSTEM
 
@@ -78,20 +79,20 @@ async def get_bot_response(msg: str = Form(...)):
             "",
             "**Core Services:**",
             "",
-            "1. **Workforce Forecasting:** UK job vacancy predictions, labour market trends",
+            "1. **Immigration Guidance:** UK visa requirements, Skilled Worker visas, sponsor licence obligations",
             "",
-            "2. **Policy Impact Analysis:** How immigration rule changes affect recruitment strategies",
+            "2. **Policy Information:** Current immigration rules, recent changes, and recruitment impact",
             "",
-            "3. **Immigration Guidance:** UK visa requirements, Skilled Worker visas, sponsor licence obligations",
+            "3. **Hiring Support:** Practical advice for recruiting international talent",
             "",
-            "**What you can forecast with me:**",
+            "**I can help you with:**",
             "",
-            "• UK Job Vacancy Ratio Forecasting (up to 6 months ahead)",
-            "• Immigration Policy Impact Predictions on job markets",
-            "• Workforce demand trends based on ONS employment data",
-            "• Event-driven forecasting incorporating policy changes and immigration rule updates",
+            "• UK immigration requirements for employees",
+            "• Sponsor licence obligations and compliance",
+            "• Skilled Worker visa eligibility and salary thresholds",
+            "• Recent policy changes affecting recruitment",
             "",
-            "What specific topic would you like to explore?"
+            "What specific immigration or hiring topic would you like to explore?"
         ]
         greeting_response = "\n".join(greeting_lines)
         
@@ -141,7 +142,8 @@ def chat_api(req: ChatRequest):
     append(req.session_id, "assistant", reply)
     return {"session_id": req.session_id, "reply": reply}
 
-@app.get("/forecast", response_model=ForecastResponse)
-def forecast_api(h: int = 6):
-    out, events = forecast_months(h)
-    return {"horizon": h, "forecast": out.to_dict(orient="records"), "events": events}
+# Forecasting endpoint disabled for minimal build
+# @app.get("/forecast", response_model=ForecastResponse)
+# def forecast_api(h: int = 6):
+#     out, events = forecast_months(h)
+#     return {"horizon": h, "forecast": out.to_dict(orient="records"), "events": events}

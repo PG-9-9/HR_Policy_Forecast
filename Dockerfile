@@ -1,24 +1,29 @@
-# Multi-stage build for minimal production image
+# Multi-stage build for minimal chat UI image
 FROM python:3.10-slim as builder
 
 # Set build arguments
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies for building
+# Install system dependencies for building (including ML/scientific computing dependencies)
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     git \
+    libblas-dev \
+    liblapack-dev \
+    libopenblas-dev \
+    gfortran \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Create virtual environment
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Copy Linux-compatible minimal requirements and install Python dependencies
+COPY requirements-minimal-linux.txt .
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements-minimal-linux.txt
 
 # Production stage
 FROM python:3.10-slim
@@ -44,11 +49,15 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 # Create app directory
 WORKDIR /app
 
-# Copy application code
-COPY --chown=appuser:appuser . .
+# Copy only necessary application code (exclude forecasting)
+COPY --chown=appuser:appuser app/ ./app/
+COPY --chown=appuser:appuser rag/ ./rag/
+COPY --chown=appuser:appuser templates/ ./templates/
+COPY --chown=appuser:appuser static/ ./static/
+COPY --chown=appuser:appuser data/processed/rag_index/ ./data/processed/rag_index/
 
 # Create necessary directories and set permissions
-RUN mkdir -p data/processed data/raw static templates && \
+RUN mkdir -p data/processed data/raw && \
     chown -R appuser:appuser /app
 
 # Switch to non-root user

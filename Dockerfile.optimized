@@ -1,0 +1,55 @@
+# Dockerfile.optimized - Full functionality with CPU-only packages for smaller size
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies (CPU-only for smaller size)
+COPY requirements-optimized.txt .
+RUN pip install --no-cache-dir -r requirements-optimized.txt
+
+# Copy application code
+COPY app/ ./app/
+COPY rag/ ./rag/
+COPY templates/ ./templates/
+COPY static/ ./static/
+
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Copy data files before switching to non-root user
+COPY data/ ./data/
+
+# Create data directories and cache directories with proper permissions
+RUN mkdir -p data/processed/rag_index data/raw /home/appuser/.cache && \
+    chown -R appuser:appuser /app /home/appuser && \
+    chmod 755 /app/data && \
+    chmod 755 /app/data/processed && \
+    chmod 755 /app/data/raw
+
+# Switch to non-root user
+USER appuser
+
+# Set environment variables for cache
+ENV TRANSFORMERS_CACHE=/home/appuser/.cache/huggingface
+ENV HF_HOME=/home/appuser/.cache/huggingface
+
+# Pre-download sentence transformer model as appuser to ensure proper permissions
+# This downloads ~270MB of models but ensures instant responses at runtime
+RUN python -c "from sentence_transformers import SentenceTransformer; model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2'); print('Model downloaded successfully as appuser')"
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Expose port
+EXPOSE 8000
+
+# Start the application (using original main.py with full functionality)
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

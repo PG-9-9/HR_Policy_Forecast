@@ -72,8 +72,10 @@ The modular RAG architecture allows for seamless adaptation to any country's imm
 ### Key Capabilities
 
 - **Immigration Policy Guidance**: Real-time advice on UK visa requirements, sponsor licence obligations, and compliance
+- **Workforce Vacancy Forecasting**: Time-series forecasting of UK job market trends (local deployment only)
 - **Interactive Chat Interface**: Natural language conversations with specialized HR assistant
 - **Official Data Integration**: Based on ONS employment statistics and official UK government sources
+- **Dual Deployment Modes**: Full ML stack locally or minimal containerized deployment
 - **Production Deployment**: Live on AWS EC2 with nginx reverse proxy and domain setup
 
 ## Architecture
@@ -85,11 +87,23 @@ The modular RAG architecture allows for seamless adaptation to any country's imm
 └─────────────────┘    └──────────────────┘    │  Knowledge)     │
                                 │                └─────────────────┘
                        ┌────────┴────────┐               
-                       │   Data Layer    │               
-                       │ (UK Policy,     │               
-                       │  Documents)     │               
-                       └─────────────────┘               
+                       │   Data Layer    │        ┌─────────────────┐
+                       │ (UK Policy,     │────────│ Forecasting ML  │
+                       │  Documents)     │        │ (Local Mode)    │
+                       └─────────────────┘        └─────────────────┘
 ```
+
+### Deployment Modes
+
+**Local Development (Full Stack):**
+- Complete ML forecasting capabilities with PyTorch
+- Time-series forecasting of UK job market trends
+- All features including workforce predictions
+
+**Docker Production (Minimal):**
+- Immigration policy assistant only
+- Optimized ~4GB image size
+- Production-ready with health checks
 
 ## Quick Start
 
@@ -99,30 +113,42 @@ The modular RAG architecture allows for seamless adaptation to any country's imm
 - **Docker** (for containerized deployment)
 - **OpenAI API Key** (for LLM functionality)
 
-### 1. Local Development
+### 1. Local Development (Full Stack with Forecasting)
 
 ```bash
 # Clone the repository
 git clone https://github.com/PG-9-9/HR_Policy_Forecast.git
 cd HR_Policy_Forecast
 
-# Install dependencies
-pip install -r requirements-optimized.txt
+# Install full dependencies (includes ML forecasting)
+pip install -r requirements.txt
 
 # Set up environment variables
 echo "OPENAI_API_KEY=your_openai_api_key_here" > .env
 
-# Start the FastAPI server
+# Enable forecasting endpoint (uncomment in app/main.py)
+# Uncomment lines 91-94 in app/main.py:
+# @app.get("/forecast", response_model=ForecastResponse)
+# def forecast_api(h: int = 6):
+#     out, events = forecast_months(h)
+#     return {"horizon": h, "forecast": out.to_dict(orient="records"), "events": events}
+
+# Start the FastAPI server with all features
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 # Open your browser and navigate to:
 # http://localhost:8000
+# Available endpoints: /chat, /forecast, /health
 ```
 
-### 2. Docker Deployment (Production)
+**Note:** Local mode includes workforce vacancy forecasting via `/forecast` endpoint when enabled.
+
+**🔧 To enable forecasting:** Uncomment lines 91-94 in `app/main.py` and install full dependencies (`pip install -r requirements.txt`)
+
+### 2. Docker Deployment (Production - Policy Assistant Only)
 
 ```bash
-# Build optimized Docker image
+# Build optimized Docker image (no forecasting)
 docker build -t mm-hr-optimized -f Dockerfile.optimized .
 
 # Run with environment file
@@ -133,6 +159,8 @@ docker run -d \
   --restart unless-stopped \
   mm-hr-optimized
 ```
+
+**Note:** Docker mode excludes forecasting to minimize image size (~4GB vs ~12GB with ML dependencies).
 
 ## Core Features
 
@@ -151,6 +179,38 @@ User: "What are the salary thresholds for Skilled Worker visas in 2024?"
 Assistant: "For Skilled Worker visas in 2024, the general salary threshold is £26,200 or the 'going rate' for the specific occupation, whichever is higher..."
 ```
 
+### Workforce Vacancy Forecasting (Local Mode Only)
+
+Time-series forecasting capabilities for strategic workforce planning:
+
+- **Job Market Trends**: Predict UK vacancy ratios up to 12 months ahead
+- **Event Impact Analysis**: Assess how policy changes affect job markets
+- **Strategic Planning**: Data-driven insights for recruitment timelines
+- **Historical Analysis**: Trend analysis of UK employment patterns
+
+**Forecasting Use Cases:**
+- **Recruitment Planning**: Anticipate tight labor markets for strategic hiring
+- **Budget Allocation**: Plan recruitment spend based on market predictions
+- **Visa Timing**: Optimize visa application timing with market forecasts
+- **Workforce Strategy**: Long-term planning based on employment trends
+
+**Example API Usage:**
+```bash
+# Get 6-month job market forecast
+curl "http://localhost:8000/forecast?h=6"
+
+Response:
+{
+  "horizon": 6,
+  "forecast": [
+    {"date": "2025-01-01", "prediction": 2.34},
+    {"date": "2025-02-01", "prediction": 2.28},
+    ...
+  ],
+  "events": []
+}
+```
+
 ### Retrieval-Augmented Generation (RAG)
 
 Advanced document retrieval system for accurate immigration guidance:
@@ -159,6 +219,26 @@ Advanced document retrieval system for accurate immigration guidance:
 - **Context Relevance**: Automatic relevance filtering for immigration topics
 - **Official Sources**: UK government documents and policy publications
 - **Real-time Updates**: Dynamic context retrieval for current policies
+
+### Workforce Forecasting (Local Mode)
+
+Time-series forecasting for strategic workforce planning:
+
+- **Primary Model**: ARIMA (selected for limited dataset ~240 observations)
+- **Secondary Model**: ETS (Exponential Smoothing fallback)
+- **Performance**: ~0.15 sMAPE accuracy on 6-month forecasts
+- **Features**: Policy event integration, automated model selection
+
+**Quick Forecasting Commands:**
+```bash
+# Model comparison and training
+python forecasting/ets_compare.py
+
+# Generate forecasts via API (local mode)
+curl "http://localhost:8000/forecast?h=6"
+```
+
+**📊 For detailed ML implementation, training commands, and technical analysis → [models/README.md](models/README.md)**
 
 ## API Endpoints
 
@@ -180,6 +260,22 @@ Content-Type: application/json
   "message": "What are the requirements for a Skilled Worker visa?",
   "top_k": 6,
   "reset": false
+}
+```
+
+### Workforce Forecasting API (Local Mode Only)
+```http
+GET /forecast?h=6
+Content-Type: application/json
+
+Response:
+{
+  "horizon": 6,
+  "forecast": [
+    {"date": "2025-01-01", "prediction": 2.34},
+    {"date": "2025-02-01", "prediction": 2.28}
+  ],
+  "events": []
 }
 ```
 
@@ -207,6 +303,18 @@ mm-hr-policy-forecast/
 │   ├── retrieve.py               # Document retrieval and search
 │   ├── query.py                  # Query processing
 │   └── extract_events.py         # Event extraction from documents
+├── forecasting/                  # Time-series forecasting (local mode)
+│   ├── infer.py                  # Forecasting inference engine
+│   ├── ets_pipeline.py           # ETS forecasting pipeline
+│   └── ets_compare.py            # Model comparison framework
+├── models/                       # ML model implementations
+│   ├── README.md                 # Detailed ML documentation
+│   ├── arima_model.py            # ARIMA time-series model
+│   ├── ets_model.py              # ETS exponential smoothing
+│   ├── naive_models.py           # Baseline models
+│   └── tft/                      # TFT deep learning (experimental)
+│       ├── train_tft.py          # TFT training script
+│       └── tft_model.py          # TFT implementation
 ├── data/                         # Data directory
 │   ├── raw/                      # Raw ONS and government data
 │   ├── processed/                # Cleaned and processed datasets
@@ -214,8 +322,9 @@ mm-hr-policy-forecast/
 ├── templates/                    # HTML templates for web interface
 │   └── index.html                # Vue.js-based chat interface
 ├── static/                       # Static web assets
-├── Dockerfile.optimized          # Production Docker configuration
-├── requirements-optimized.txt    # Production Python dependencies
+├── Dockerfile.optimized          # Production Docker configuration (no ML)
+├── requirements.txt              # Full dependencies (with forecasting)
+├── requirements-optimized.txt    # Production Python dependencies (minimal)
 ├── main.py                       # CLI entry point for batch processing
 └── README.md                     # This file
 ```
@@ -260,17 +369,29 @@ The project uses an optimized Docker setup for production deployment:
 - **International Recruitment**: Understand visa requirements for global talent
 - **Compliance Management**: Stay updated on immigration rule changes
 - **Policy Impact**: Assess how immigration changes affect recruitment strategies
+- **Workforce Forecasting**: Plan recruitment based on predicted job market trends
+- **Strategic Timing**: Optimize hiring timelines using vacancy forecasts
 
 ### For Hiring Managers
 - **Candidate Assessment**: Visa eligibility screening for international applicants
 - **Timeline Planning**: Understand processing times for work permits
 - **Risk Management**: Compliance risk assessment for international hires
+- **Market Intelligence**: Use forecasting to plan recruitment campaigns
 
 ### For Employers
 - **Sponsor Licence Management**: Guidance on sponsor licence obligations
 - **Strategic Planning**: Immigration considerations in workforce planning
 - **Compliance Monitoring**: Stay informed on policy changes
 - **Cost Optimization**: Efficient immigration process management
+- **Budget Planning**: Forecast-driven recruitment budget allocation
+
+### Forecasting-Specific Use Cases (Local Mode)
+- **Seasonal Planning**: Predict tight labor markets for key recruitment periods
+- **Resource Allocation**: Allocate recruitment resources based on market forecasts
+- **Competitive Intelligence**: Understand when to accelerate hiring before market tightens
+- **Long-term Strategy**: Multi-month workforce planning based on employment trends
+
+**💡 For detailed model training, ARIMA vs TFT analysis, and technical implementation → [models/README.md](models/README.md)**
 
 ## Testing
 
@@ -285,6 +406,9 @@ curl -X POST "http://localhost:8000/get" \
 curl -X POST "http://localhost:8000/chat" \
      -H "Content-Type: application/json" \
      -d '{"session_id": "test", "message": "Hello", "reset": false}'
+
+# Test forecasting (local mode only)
+curl "http://localhost:8000/forecast?h=3"
 
 # Health check
 curl "http://localhost:8000/health"
@@ -332,17 +456,20 @@ sudo apt install -y nginx
 ### Local Development
 
 ```bash
-# Install in development mode
-pip install -r requirements-optimized.txt
+# Install in development mode (full stack with forecasting)
+pip install -r requirements.txt
 
 # Run with auto-reload
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Test forecasting endpoint
+curl "http://localhost:8000/forecast?h=6"
 ```
 
 ### Docker Development
 
 ```bash
-# Build development image
+# Build development image (minimal stack, no forecasting)
 docker build -t hr-assistant-dev -f Dockerfile.optimized .
 
 # Run development container

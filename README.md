@@ -11,7 +11,60 @@
 
 ## Overview
 
-The HR Policy Forecast system is an AI-powered conversational assistant designed to help HR professionals and employers navigate UK immigration requirements. Built with FastAPI and OpenAI's GPT models, it provides real-time immigration guidance through an intuitive chat interface.
+The HR Policy Forecast system is an AI-powered conversational assistant specifically designed to help HR professionals navigate complex immigration requirements in their daily operations. Originally conceptualized for the German/EU market, this system was rapidly prototyped using UK immigration data due to better data availability and time constraints, demonstrating a complete end-to-end solution in under 36 hours of development.
+
+### Target Users: HR Professionals & Immigration Challenges
+
+HR teams face increasing complexity when managing international talent acquisition and compliance. This system addresses common HR pain points:
+
+**Typical HR Questions Answered:**
+- "What visa category should we use for a software engineer from India?"
+- "What are the minimum salary requirements for sponsoring a candidate?"
+- "How long does the sponsor licence application process take?"
+- "What documentation do we need for a Skilled Worker visa application?"
+- "Can we hire someone on a student visa for a permanent role?"
+- "What are our compliance obligations as a sponsor?"
+- "How do recent policy changes affect our current applications?"
+
+**HR Professional Benefits:**
+- **Instant Policy Guidance**: Get immediate answers to immigration queries without lengthy research
+- **Compliance Assurance**: Stay updated on changing immigration rules and requirements
+- **Cost Efficiency**: Reduce reliance on expensive immigration lawyers for routine questions
+- **Risk Mitigation**: Understand compliance obligations and avoid costly mistakes
+- **Strategic Planning**: Make informed decisions about international hiring strategies
+- **Time Savings**: Eliminate hours of manual research through gov.uk documents
+
+### Rapid Development & Replication Strategy
+
+**Development Timeline:** Complete system built in under 36 hours (20% code reused from previous deployment projects)
+
+**German/EU Market Adaptation:**
+While initially designed for the German market, UK data was used for rapid prototyping. The system can be easily adapted for German immigration law:
+
+1. **Data Sources Replacement:**
+   - Replace UK gov.uk documents with German Federal Office for Migration and Refugees (BAMF) publications
+   - Integrate EU Blue Card requirements and German skilled worker immigration act documents
+   - Add German labor market data from Bundesagentur für Arbeit
+
+2. **Document Processing:**
+   - German language document processing (UTF-8 encoding for umlauts)
+   - Legal terminology adaptation for German immigration law
+   - EU directive compliance documentation
+
+3. **Localization Steps:**
+   ```bash
+   # Replace data sources in /data/external/
+   # German immigration documents instead of UK corpus
+   # Update RAG index building in rag/build_index.py
+   # Modify system prompts in app/llm.py for German context
+   ```
+
+4. **Regulatory Adaptation:**
+   - German visa categories (EU Blue Card, Skilled Worker, etc.)
+   - German salary thresholds and qualification requirements
+   - German compliance and reporting obligations
+
+The modular RAG architecture allows for seamless adaptation to any country's immigration system by simply replacing the document corpus and updating the system prompts.
 
 ### Key Capabilities
 

@@ -7,3 +7,4 @@ shortcuts.txt
 __pycache__/
 NEW_UI/
 MD_Files/
+.vscode/

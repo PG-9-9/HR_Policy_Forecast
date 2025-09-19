@@ -7,6 +7,8 @@
 
 > **Production-ready UK immigration policy assistant for HR professionals, hiring managers, and employers.**
 
+
+**Sweet Note:** Start chat by saying Hi
 **Live Demo:** [http://project-demo.live](http://project-demo.live)
 
 ## Overview
@@ -406,6 +408,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **ONS**: Office for National Statistics employment data
 - **OpenAI**: GPT models for natural language processing
 - **Vue.js Community**: Frontend framework and components
+- **AI-QL/chat-ui**: Single-File AI Chatbot UI with Multimodal & MCP Support[](https://github.com/AI-QL/chat-ui)
 
 ## Support
 

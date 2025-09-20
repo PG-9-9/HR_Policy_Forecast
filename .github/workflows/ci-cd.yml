@@ -99,12 +99,57 @@ jobs:
 
     - name: Verify deployment
       env:
+        AWS_PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY }}
         AWS_HOST: ${{ secrets.AWS_HOST }}
+        AWS_USER: ${{ secrets.AWS_USER }}
       run: |
-        # Test the deployed application
-        sleep 15
-        curl -f http://$AWS_HOST:8000/health || {
-          echo "❌ Health check failed!"
+        # Save private key to file
+        echo "$AWS_PRIVATE_KEY" > private_key.pem
+        chmod 600 private_key.pem
+        
+        # Test the deployed application from inside EC2
+        ssh -i private_key.pem -o StrictHostKeyChecking=no $AWS_USER@$AWS_HOST << 'EOF'
+          echo "🔍 Waiting for application to start..."
+          
+          # Wait up to 60 seconds for the application to be ready
+          for i in {1..12}; do
+            echo "Health check attempt $i/12..."
+            
+            # Check if container is still running
+            if ! docker ps | grep hr-policy-forecast; then
+              echo "❌ Container stopped running!"
+              echo "Container logs:"
+              docker logs hr-policy-forecast
+              exit 1
+            fi
+            
+            # Try health check from localhost (inside EC2)
+            if curl -f -s http://localhost:8000/health > /dev/null 2>&1; then
+              echo "✅ Health check passed!"
+              echo "Application is running at http://localhost:8000"
+              
+              # Get the actual health response
+              echo "Health endpoint response:"
+              curl -s http://localhost:8000/health || echo "Could not get response"
+              exit 0
+            else
+              echo "⏳ Application not ready yet, waiting 5 seconds..."
+              sleep 5
+            fi
+          done
+          
+          # If we get here, health check failed
+          echo "❌ Health check failed after 60 seconds!"
+          echo "Container status:"
+          docker ps | grep hr-policy-forecast || echo "Container not found"
+          echo "Container logs:"
+          docker logs hr-policy-forecast
           exit 1
-        }
+        EOF
+        
+        # Clean up private key
+        rm private_key.pem
+        
         echo "✅ Application is running successfully on AWS EC2!"
+        echo "🌐 Access your application at: http://$AWS_HOST:8000"
+        echo "💡 Note: Make sure port 8000 is open in your EC2 security group for external access"

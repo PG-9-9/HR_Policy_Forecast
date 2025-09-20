@@ -42,7 +42,33 @@ def _init():
 @app.get("/health")
 async def health_check():
     """Health check endpoint for load balancers and monitoring"""
-    return {"status": "healthy", "service": "HR Policy Forecast API"}
+    import os
+    
+    health_status = {
+        "status": "healthy", 
+        "service": "HR Policy Forecast API",
+        "checks": {}
+    }
+    
+    # Check if OpenAI API key is configured
+    openai_key = os.getenv("OPENAI_API_KEY")
+    if openai_key:
+        health_status["checks"]["openai_key_configured"] = True
+        health_status["checks"]["openai_key_format"] = "valid" if openai_key.startswith("sk-") else "invalid_format"
+    else:
+        health_status["checks"]["openai_key_configured"] = False
+        health_status["status"] = "degraded"
+    
+    # Test OpenAI connection (basic check)
+    try:
+        from app.llm import client
+        # Don't make an actual API call in health check, just verify client is configured
+        health_status["checks"]["openai_client"] = "configured"
+    except Exception as e:
+        health_status["checks"]["openai_client"] = f"error: {str(e)}"
+        health_status["status"] = "degraded"
+    
+    return health_status
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):

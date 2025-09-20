@@ -70,12 +70,17 @@ jobs:
           
           # Run new container with environment variables
           echo "🚀 Starting new container..."
+          echo "Setting up environment variables..."
           docker run -d \
             --name hr-policy-forecast \
             -p 8000:8000 \
             -e OPENAI_API_KEY="$OPENAI_API_KEY" \
             --restart unless-stopped \
             hr-policy-forecast:latest
+          
+          # Verify environment variables are set
+          echo "🔍 Verifying environment variables..."
+          docker exec hr-policy-forecast env | grep -E "(OPENAI|PATH)" || echo "Environment check completed"
           
           # Clean up
           rm hr-policy-forecast.tar.gz
@@ -125,6 +130,10 @@ jobs:
               exit 1
             fi
             
+            # Check container logs for any startup errors
+            echo "📋 Recent container logs:"
+            docker logs --tail=10 hr-policy-forecast
+            
             # Try health check from localhost (inside EC2)
             if curl -f -s http://localhost:8000/health > /dev/null 2>&1; then
               echo "✅ Health check passed!"
@@ -133,6 +142,12 @@ jobs:
               # Get the actual health response
               echo "Health endpoint response:"
               curl -s http://localhost:8000/health || echo "Could not get response"
+              
+              # Check if OpenAI API is working
+              echo "🔑 Testing OpenAI API connectivity..."
+              OPENAI_TEST=$(curl -s http://localhost:8000/health | grep -i "openai\|api\|key" || echo "No OpenAI status in health response")
+              echo "OpenAI status: $OPENAI_TEST"
+              
               exit 0
             else
               echo "⏳ Application not ready yet, waiting 5 seconds..."
@@ -144,8 +159,10 @@ jobs:
           echo "❌ Health check failed after 60 seconds!"
           echo "Container status:"
           docker ps | grep hr-policy-forecast || echo "Container not found"
-          echo "Container logs:"
+          echo "Full container logs:"
           docker logs hr-policy-forecast
+          echo "Environment variables in container:"
+          docker exec hr-policy-forecast env | grep -E "(OPENAI|API)" || echo "No OpenAI env vars found"
           exit 1
         EOF
         

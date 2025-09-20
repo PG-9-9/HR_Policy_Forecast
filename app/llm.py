@@ -7,20 +7,20 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Initialize OpenAI client with error handling
+def get_openai_client():
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY environment variable is not set")
+    if not api_key.startswith("sk-"):
+        raise ValueError("OPENAI_API_KEY appears to be invalid (should start with 'sk-')")
+    return OpenAI(api_key=api_key)
 
-# app/llm.py
-import os
-from openai import OpenAI
-from typing import List, Dict
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
-
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+try:
+    client = get_openai_client()
+except Exception as e:
+    print(f"Warning: OpenAI client initialization failed: {e}")
+    client = None
 
 # Minimal system prompt for OpenAI-only version
 SYSTEM_MINIMAL = """You are an HR Assistant specialized in UK immigration policy for hiring and recruitment decisions.
@@ -117,6 +117,10 @@ def chat_minimal(question: str, history: List[Dict[str, str]], model: str = "gpt
         The assistant's response as a string
     """
     try:
+        # Check if client is available
+        if client is None:
+            return "I apologize, but the AI service is currently unavailable. Please check that the OpenAI API key is properly configured."
+        
         # Build messages with system prompt and history
         messages = [{"role": "system", "content": SYSTEM_MINIMAL}]
         

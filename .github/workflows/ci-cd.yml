@@ -34,6 +34,7 @@ jobs:
         AWS_PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY }}
         AWS_HOST: ${{ secrets.AWS_HOST }}
         AWS_USER: ${{ secrets.AWS_USER }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: |
         # Save private key to file
         echo "$AWS_PRIVATE_KEY" > private_key.pem
@@ -43,14 +44,14 @@ jobs:
         scp -i private_key.pem -o StrictHostKeyChecking=no hr-policy-forecast.tar.gz $AWS_USER@$AWS_HOST:/tmp/
         
         # Deploy on EC2
-        ssh -i private_key.pem -o StrictHostKeyChecking=no $AWS_USER@$AWS_HOST << 'EOF'
+        ssh -i private_key.pem -o StrictHostKeyChecking=no $AWS_USER@$AWS_HOST << EOF
           # Stop and remove any containers using port 8000
           echo "🔍 Checking for containers using port 8000..."
-          CONTAINERS_ON_PORT=$(docker ps -q --filter "publish=8000")
-          if [ ! -z "$CONTAINERS_ON_PORT" ]; then
-            echo "Stopping containers using port 8000: $CONTAINERS_ON_PORT"
-            docker stop $CONTAINERS_ON_PORT
-            docker rm $CONTAINERS_ON_PORT
+          CONTAINERS_ON_PORT=\$(docker ps -q --filter "publish=8000")
+          if [ ! -z "\$CONTAINERS_ON_PORT" ]; then
+            echo "Stopping containers using port 8000: \$CONTAINERS_ON_PORT"
+            docker stop \$CONTAINERS_ON_PORT
+            docker rm \$CONTAINERS_ON_PORT
           fi
           
           # Also try to stop by name (in case it exists but not using the port)
@@ -67,11 +68,12 @@ jobs:
           cd /tmp
           docker load < hr-policy-forecast.tar.gz
           
-          # Run new container
+          # Run new container with environment variables
           echo "🚀 Starting new container..."
           docker run -d \
             --name hr-policy-forecast \
             -p 8000:8000 \
+            -e OPENAI_API_KEY="$OPENAI_API_KEY" \
             --restart unless-stopped \
             hr-policy-forecast:latest
           

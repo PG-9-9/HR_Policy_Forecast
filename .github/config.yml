@@ -1,0 +1,50 @@
+# Configuration for GitHub Actions
+# This file contains common settings used across workflows
+
+# Python Configuration
+PYTHON_VERSION: "3.10"
+PYTHON_CACHE_KEY: "pip"
+
+# Docker Configuration
+REGISTRY: "ghcr.io"
+PLATFORMS: "linux/amd64,linux/arm64"
+
+# Application Configuration
+APP_NAME: "hr-policy-forecast"
+HEALTH_ENDPOINT: "/health"
+DEFAULT_PORT: 8000
+
+# Model Training Configuration
+MODELS_BASIC: "naive,linear_trend"
+MODELS_STATISTICAL: "arima,ets"
+MODELS_ADVANCED: "tft"
+TRAINING_DATA_PATH: "data/raw/ons_vacancies_ratio_total.csv"
+RESULTS_PATH: "results/"
+
+# Artifact Retention
+MODEL_ARTIFACTS_RETENTION_DAYS: 30
+CHART_ARTIFACTS_RETENTION_DAYS: 7
+BUILD_ARTIFACTS_RETENTION_DAYS: 7
+
+# Security Configuration
+TRIVY_SEVERITY: "HIGH,CRITICAL"
+SAFETY_CHECK_ENABLED: true
+BANDIT_SCAN_ENABLED: true
+
+# Notification Configuration
+ENABLE_SLACK_NOTIFICATIONS: false
+ENABLE_TEAMS_NOTIFICATIONS: false
+ENABLE_EMAIL_NOTIFICATIONS: false
+
+# Deployment Configuration
+STAGING_HEALTH_CHECK_ATTEMPTS: 10
+STAGING_HEALTH_CHECK_INTERVAL: 10
+PRODUCTION_HEALTH_CHECK_ATTEMPTS: 15
+PRODUCTION_HEALTH_CHECK_INTERVAL: 20
+DEPLOYMENT_TIMEOUT: 300
+
+# Workflow Configuration
+AUTO_MERGE_DEPENDENCY_UPDATES: false
+AUTO_DEPLOY_STAGING: true
+AUTO_DEPLOY_PRODUCTION: false
+REQUIRE_MANUAL_APPROVAL_PROD: true

@@ -1,0 +1,90 @@
+name: Simple Build and Deploy
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build Docker and Deploy to AWS EC2
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Create required directories for build context
+      run: |
+        mkdir -p data/processed/rag_index
+        mkdir -p data/raw
+        touch data/processed/rag_index/.gitkeep
+        touch data/raw/.gitkeep
+
+    - name: Build Docker image
+      run: |
+        docker build -f Dockerfile.optimized -t hr-policy-forecast:latest .
+
+    - name: Save Docker image as artifact
+      run: |
+        docker save hr-policy-forecast:latest | gzip > hr-policy-forecast.tar.gz
+
+    - name: Deploy to AWS EC2
+      env:
+        AWS_PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY }}
+        AWS_HOST: ${{ secrets.AWS_HOST }}
+        AWS_USER: ${{ secrets.AWS_USER }}
+      run: |
+        # Save private key to file
+        echo "$AWS_PRIVATE_KEY" > private_key.pem
+        chmod 600 private_key.pem
+        
+        # Copy Docker image to EC2
+        scp -i private_key.pem -o StrictHostKeyChecking=no hr-policy-forecast.tar.gz $AWS_USER@$AWS_HOST:/tmp/
+        
+        # Deploy on EC2
+        ssh -i private_key.pem -o StrictHostKeyChecking=no $AWS_USER@$AWS_HOST << 'EOF'
+          # Stop existing container if running
+          docker stop hr-policy-forecast || true
+          docker rm hr-policy-forecast || true
+          
+          # Load new image
+          cd /tmp
+          docker load < hr-policy-forecast.tar.gz
+          
+          # Run new container
+          docker run -d \
+            --name hr-policy-forecast \
+            -p 8000:8000 \
+            --restart unless-stopped \
+            hr-policy-forecast:latest
+          
+          # Clean up
+          rm hr-policy-forecast.tar.gz
+          
+          # Wait a moment for container to start
+          sleep 10
+          
+          # Check if container is running
+          if docker ps | grep hr-policy-forecast; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Deployment failed!"
+            exit 1
+          fi
+        EOF
+        
+        # Clean up private key
+        rm private_key.pem
+
+    - name: Verify deployment
+      env:
+        AWS_HOST: ${{ secrets.AWS_HOST }}
+      run: |
+        # Test the deployed application
+        sleep 15
+        curl -f http://$AWS_HOST:8000/health || {
+          echo "❌ Health check failed!"
+          exit 1
+        }
+        echo "✅ Application is running successfully on AWS EC2!"

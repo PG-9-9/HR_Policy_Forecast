@@ -44,15 +44,31 @@ jobs:
         
         # Deploy on EC2
         ssh -i private_key.pem -o StrictHostKeyChecking=no $AWS_USER@$AWS_HOST << 'EOF'
-          # Stop existing container if running
-          docker stop hr-policy-forecast || true
-          docker rm hr-policy-forecast || true
+          # Stop and remove any containers using port 8000
+          echo "🔍 Checking for containers using port 8000..."
+          CONTAINERS_ON_PORT=$(docker ps -q --filter "publish=8000")
+          if [ ! -z "$CONTAINERS_ON_PORT" ]; then
+            echo "Stopping containers using port 8000: $CONTAINERS_ON_PORT"
+            docker stop $CONTAINERS_ON_PORT
+            docker rm $CONTAINERS_ON_PORT
+          fi
+          
+          # Also try to stop by name (in case it exists but not using the port)
+          docker stop hr-policy-forecast 2>/dev/null || true
+          docker rm hr-policy-forecast 2>/dev/null || true
+          
+          # Kill any process using port 8000 as backup
+          sudo fuser -k 8000/tcp 2>/dev/null || true
+          
+          # Wait a moment for port to be released
+          sleep 5
           
           # Load new image
           cd /tmp
           docker load < hr-policy-forecast.tar.gz
           
           # Run new container
+          echo "🚀 Starting new container..."
           docker run -d \
             --name hr-policy-forecast \
             -p 8000:8000 \
@@ -63,13 +79,17 @@ jobs:
           rm hr-policy-forecast.tar.gz
           
           # Wait a moment for container to start
-          sleep 10
+          sleep 15
           
           # Check if container is running
           if docker ps | grep hr-policy-forecast; then
             echo "✅ Deployment successful!"
+            echo "Container status:"
+            docker ps | grep hr-policy-forecast
           else
             echo "❌ Deployment failed!"
+            echo "Container logs:"
+            docker logs hr-policy-forecast 2>/dev/null || echo "No logs available"
             exit 1
           fi
         EOF

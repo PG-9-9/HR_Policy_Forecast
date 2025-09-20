@@ -23,7 +23,10 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -f Dockerfile.optimized -t hr-policy-forecast:latest .
+        # Use timestamp to create unique tags and avoid caching issues
+        TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+        echo "Building with timestamp: $TIMESTAMP"
+        docker build --no-cache -f Dockerfile.optimized -t hr-policy-forecast:$TIMESTAMP -t hr-policy-forecast:latest .
 
     - name: Save Docker image as artifact
       run: |
@@ -60,6 +63,10 @@ jobs:
           # Kill any process using port 8000 as backup
           sudo fuser -k 8000/tcp 2>/dev/null || true
           
+          # Remove old images to force fresh deployment
+          echo "🧹 Cleaning up old Docker images..."
+          docker images | grep hr-policy-forecast | awk '{print $3}' | xargs -r docker rmi -f || true
+          
           # Wait a moment for port to be released
           sleep 5
           
@@ -87,6 +94,8 @@ jobs:
             echo "✅ Deployment successful!"
             echo "Container status:"
             docker ps | grep hr-policy-forecast
+            echo "📋 Image info:"
+            docker images | grep hr-policy-forecast
           else
             echo "❌ Deployment failed!"
             echo "Container logs:"
